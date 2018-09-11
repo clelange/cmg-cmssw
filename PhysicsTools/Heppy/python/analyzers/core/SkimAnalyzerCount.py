@@ -21,7 +21,12 @@ class SkimAnalyzerCount( Analyzer ):
         super(SkimAnalyzerCount, self).declareHandles()
         self.counterHandle = Handle("edm::MergeableCounter")
         self.mchandles['GenInfo'] = AutoHandle( ('generator','',''), 'GenEventInfoProduct' )
-        
+        self.mchandles['LHEweights'] = AutoHandle('externalLHEProducer',
+                                                  'LHEEventProduct',
+                                                  mayFail=True,
+                                                  fallbackLabel='source',
+                                                  lazy=False )
+
     def beginLoop(self, setup):
         super(SkimAnalyzerCount,self).beginLoop(setup)
 
@@ -30,6 +35,7 @@ class SkimAnalyzerCount( Analyzer ):
         self.count.register('All Events')
         if self.cfg_comp.isMC: 
             self.count.register('Sum Weights')
+            self.count.register('Sum Weights LO')
 
         if not self.useLumiBlocks:
             #print 'Will actually count events instead of accessing lumi blocks'
@@ -51,7 +57,8 @@ class SkimAnalyzerCount( Analyzer ):
             self.count.inc('All Events',totalEvents)
             if self.cfg_comp.isMC: 
                 self.count.inc('Sum Weights',totalEvents)
-            print 'Done -> proceeding with the analysis' 
+                self.count.inc('Sum Weights LO',totalEvents)
+            print 'Done -> proceeding with the analysis'
         else:
             print 'Failed -> will have to actually count events (this can happen if the input dataset is not a CMG one)'
 
@@ -68,4 +75,5 @@ class SkimAnalyzerCount( Analyzer ):
             self.count.inc('All Events')
             if self.cfg_comp.isMC: 
                 self.count.inc('Sum Weights', self.mchandles['GenInfo'].product().weight())
+                self.count.inc('Sum Weights LO', float(self.mchandles['GenInfo'].product().weight()*self.mchandles['LHEweights'].product().weights()[112].wgt/self.mchandles['LHEweights'].product().weights()[0].wgt))
         return True

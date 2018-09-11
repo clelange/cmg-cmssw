@@ -34,12 +34,12 @@ class LHEWeightAnalyzer( Analyzer ):
             self.genLumiHandle = Handle("GenLumiInfoHeader")
             if self.savePSweights: raise RuntimeError, 'this combination of options in LHEWeightAnalyzer is not supported'
 
-        if self.cfg_ana.useLumiInfo or self.savePSweights:
-            self.mchandles['GenInfos'] = AutoHandle('generator',
-                                                    'GenEventInfoProduct',
-                                                    mayFail=True,
-                                                    fallbackLabel='source',
-                                                    lazy=False )
+        # if self.cfg_ana.useLumiInfo or self.savePSweights:
+        self.mchandles['GenInfos'] = AutoHandle('generator',
+                                                'GenEventInfoProduct',
+                                                mayFail=True,
+                                                fallbackLabel='source',
+                                                lazy=False )
 
     def beginLoop(self, setup):
         super(LHEWeightAnalyzer,self).beginLoop(setup)
@@ -63,7 +63,8 @@ class LHEWeightAnalyzer( Analyzer ):
         # Add LHE weight info
         event.LHE_weights = []
         event.LHE_originalWeight = 1.0
-        
+        event.genWeight = 1.0
+
         if self.mchandles['LHEweights'].isValid() and not self.cfg_ana.useLumiInfo:
             event.LHE_originalWeight = self.mchandles['LHEweights'].product().originalXWGTUP()
 
@@ -87,6 +88,8 @@ class LHEWeightAnalyzer( Analyzer ):
 
                     else: raise RuntimeError('Unknown string id in LHE weights')
                     event.LHE_weights.append(newweight)
+            if self.mchandles['GenInfos'].isValid():
+                event.genWeight = self.mchandles['GenInfos'].product().weight()
 
             if self.savePSweights and self.mchandles['GenInfos'].isValid():
                 for cnt,w in enumerate(self.mchandles['GenInfos'].product().weights()):
